@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>應徵履歷列印工具｜央大門市 &amp; 豐亞門市</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ===== ROOT ===== */
+:root {
+  --green: #1a5c3a;
+  --green-dark: #0f3d26;
+  --green-light: #e8f4ee;
+  --gold: #e6a817;
+  --gold-light: #fff8e1;
+  --text: #111;
+  --muted: #666;
+  --border: #ddd;
+  --bg: #f5f7f5;
+  --white: #fff;
+  --radius: 8px;
+}
+
+/* ===== SCREEN UI ===== */
+body {
+  font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  background: var(--green);
+  color: #fff;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.header-logo {
+  width: 44px; height: 44px;
+  background: var(--gold);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--green-dark);
+  flex-shrink: 0;
+}
+.header-title { font-size: 17px; font-weight: 700; letter-spacing: 0.02em; }
+.header-sub { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+
+.container { max-width: 860px; margin: 0 auto; padding: 24px 20px 60px; }
+
+/* ===== CARD ===== */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 13px; font-weight: 700;
+  color: var(--green);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 16px;
+  background: var(--green);
+  border-radius: 2px;
+}
+
+/* ===== STEP BADGE ===== */
+.step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+.step-num {
+  width: 24px; height: 24px;
+  background: var(--green);
+  color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0; margin-top: 1px;
+}
+.step-text { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* ===== TEXTAREA ===== */
+textarea {
+  width: 100%;
+  height: 110px;
+  font-size: 11.5px;
+  font-family: 'Courier New', monospace;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fafafa;
+  color: var(--text);
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+}
+textarea:focus { outline: none; border-color: var(--green); }
+
+/* ===== BUTTONS ===== */
+.btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.btn {
+  padding: 9px 20px;
+  font-size: 13px;
+  font-family: inherit;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+.btn-primary {
+  background: var(--green);
+  color: #fff;
+  border: none;
+}
+.btn-primary:hover { background: var(--green-dark); }
+.btn-outline {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover { background: #f0f0f0; }
+.btn-print {
+  background: var(--gold);
+  color: var(--green-dark);
+  border: none;
+  font-weight: 700;
+}
+.btn-print:hover { background: #d4950f; }
+
+/* ===== STATUS ===== */
+#status {
+  font-size: 12px;
+  color: var(--green);
+  margin-top: 8px;
+  min-height: 18px;
+  font-weight: 500;
+}
+#status.err { color: #c0392b; }
+
+/* ===== SELECTOR ROW ===== */
+#sel-row {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--green-light);
+  border-radius: var(--radius);
+  border: 1px solid #b8dbc8;
+}
+#sel-row label { font-size: 13px; font-weight: 500; color: var(--green-dark); }
+select {
+  padding: 7px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid #b8dbc8;
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+}
+select:focus { outline: none; border-color: var(--green); }
+
+.hint-box {
+  background: #fffbea;
+  border: 1px solid #ffe082;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #6b4c00;
+  margin-top: 12px;
+  display: none;
+  line-height: 1.7;
+}
+
+/* ===== A4 PREVIEW ===== */
+#a4 {
+  display: none;
+  width: 100%;
+  max-width: 794px;
+  margin: 20px auto 0;
+  background: #fff;
+  color: #111;
+  border: 1px solid #ccc;
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+  font-size: 10.5px;
+  line-height: 1.55;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+/* Resume internals */
+.rh { display: flex; align-items: center; gap: 14px; border-bottom: 2.5px solid #1a5c3a; padding-bottom: 10px; margin-bottom: 14px; }
+.avatar { width: 50px; height: 50px; border-radius: 50%; background: #1a5c3a; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; flex-shrink: 0; font-family: 'Noto Serif TC', serif; }
+.rname { font-size: 22px; font-weight: 700; color: #1a5c3a; font-family: 'Noto Serif TC', serif; }
+.rsub { font-size: 10px; color: #777; margin-top: 3px; }
+.rb { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
+.rsec { margin-bottom: 12px; }
+.sh { font-size: 10px; font-weight: 700; color: #fff; background: #1a5c3a; padding: 2px 9px; border-radius: 3px; margin-bottom: 6px; display: inline-block; letter-spacing: 0.03em; }
+.fr { display: flex; gap: 4px; margin-bottom: 2.5px; }
+.fl { color: #aaa; font-size: 9.5px; min-width: 66px; flex-shrink: 0; padding-top: 0.5px; }
+.fv { color: #111; font-size: 10.5px; word-break: break-all; }
+.fw { grid-column: 1 / -1; }
+.eb { background: #f5faf7; border-left: 3px solid #1a5c3a; padding: 6px 10px; border-radius: 3px; margin-bottom: 6px; }
+.ec { font-weight: 700; font-size: 10.5px; color: #1a5c3a; margin-bottom: 3px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sbadges { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.sbadge { background: #fff8e1; color: #6b4c00; border: 0.5px solid #e6c96a; border-radius: 3px; padding: 2px 7px; font-size: 9.5px; }
+.agree { margin-top: 12px; padding-top: 8px; border-top: 0.5px solid #e0e0e0; font-size: 9px; color: #aaa; text-align: center; line-height: 1.6; }
+
+/* ===== PRINT MODE ===== */
+@media print {
+  body { background: #fff; }
+  header, .container > .card, #sel-row, .hint-box, h2 { display: none !important; }
+  #a4 {
+    display: block !important;
+    position: fixed;
+    left: 0; top: 0;
+    width: 210mm;
+    max-width: none;
+    margin: 0;
+    padding: 16mm 18mm;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 10px;
+  }
+  .rname { font-size: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">7</div>
+  <div>
+    <div class="header-title">應徵履歷 A4 列印工具</div>
+    <div class="header-sub">央大門市 &amp; 豐亞門市｜門市人員應徵表</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <div class="card-title">使用說明</div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">開啟 Google 試算表（表單回應），選取<strong>第一列標題 ＋ 要列印的資料列</strong>，複製（⌘C / Ctrl+C）</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">貼入下方文字框，按「解析資料」</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">從下拉選單選擇應徵者，預覽即時產生</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">按「列印 / 存成 PDF」，列印設定選 A4、取消頁首頁尾、縮放選「符合頁面」</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">貼上試算表資料</div>
+    <textarea id="ta" placeholder="請複製試算表的「標題列＋資料列」後貼到這裡&#10;&#10;格式範例（Tab 分隔）：&#10;時間戳記	Email	姓名	身份證字號	出生年月日…&#10;2025/01/01 09:00:00	abc@gmail.com	李惠茹	H225516652	2001/3/27…"></textarea>
+    <div id="status"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="parseData()">解析資料</button>
+      <button class="btn btn-outline" onclick="clearAll()">清除</button>
+    </div>
+
+    <div id="sel-row">
+      <label>選擇應徵者：</label>
+      <select id="sel" onchange="renderResume()"></select>
+      <button class="btn btn-print" onclick="window.print()">🖨 列印 / 存成 PDF</button>
+    </div>
+
+    <div class="hint-box" id="hint">
+      💡 列印提示：瀏覽器列印視窗 → 紙張：A4 → 取消勾選「頁首和頁尾」→ 縮放：符合頁面 → 儲存為 PDF 或直接列印
+    </div>
+  </div>
+
+</div>
+
+<!-- A4 PREVIEW -->
+<div id="a4"></div>
+
+<script>
+let recs = [], hdrs = [];
+
+function parseData() {
+  const raw = document.getElementById('ta').value.trim();
+  const st = document.getElementById('status');
+  if (!raw) { st.className = 'err'; st.textContent = '⚠ 請先貼上試算表資料。'; return; }
+  const lines = raw.split('\n').filter(l => l.trim());
+  if (lines.length < 2) { st.className = 'err'; st.textContent = '⚠ 需要標題列＋至少一筆資料。'; return; }
+
+  hdrs = lines[0].split('\t').map(h => h.trim());
+  recs = lines.slice(1).map(line => {
+    const c = line.split('\t');
+    const o = {};
+    hdrs.forEach((h, i) => o[h] = (c[i] || '').trim());
+    return o;
+  });
+
+  st.className = '';
+  st.textContent = `✓ 已解析 ${recs.length} 筆應徵資料`;
+
+  const sel = document.getElementById('sel');
+  sel.innerHTML = recs.map((r, i) =>
+    `<option value="${i}">${r['姓名'] || '第' + (i+1) + '筆'}</option>`
+  ).join('');
+
+  document.getElementById('sel-row').style.display = 'flex';
+  document.getElementById('hint').style.display = 'block';
+  renderResume();
+}
+
+function v(r, key) { return (r[key] || '').trim(); }
+
+function fr(label, val) {
+  if (!val || val === '無' || val === '') return '';
+  return `<div class="fr"><span class="fl">${label}</span><span class="fv">${val}</span></div>`;
+}
+
+function buildExp(r, num) {
+  const numCh = num === 1 ? '一' : '二';
+  const coKey = `【經歷${numCh}】服務機關名稱`;
+  const co = v(r, coKey);
+  if (!co || co === '無') return `<div style="color:#ccc;font-size:9.5px;padding:8px 0;">無第${numCh}段工作經歷</div>`;
+
+  let ti = '', pe = '', pw = '', re = '';
+
+  if (num === 1) {
+    ti = v(r, '職位名稱');
+    pw = v(r, '待遇');
+    pe = v(r, '任職期間（例：2020/03 至 2022/06）') || v(r, '任職期間');
+    re = v(r, '離職原因');
+  } else {
+    // 經歷二：欄位名稱與經歷一相同，取試算表中第二次出現的同名欄
+    const keys = Object.keys(r);
+    const idx2 = keys.findIndex(k => k === coKey);
+    if (idx2 > -1) {
+      ti = r[keys[idx2 + 1]] || '';
+      pe = r[keys[idx2 + 2]] || '';
+      re = r[keys[idx2 + 3]] || '';
+    }
+  }
+
+  return `<div class="eb">
+    <div class="ec">${co}</div>
+    ${fr('職稱', ti)}
+    ${num === 1 && pw ? fr('待遇', pw) : ''}
+    ${fr('任職期間', pe)}
+    ${fr('離職原因', re)}
+  </div>`;
+}
+
+function renderResume() {
+  const idx = parseInt(document.getElementById('sel').value);
+  const r = recs[idx];
+  if (!r) return;
+
+  const name = v(r, '姓名');
+  const init = name ? name[0] : '?';
+
+  const shifts = v(r, '期望上班班別（可複選）');
+  const shiftArr = shifts ? shifts.split(/[，,、]/).map(s => s.trim()).filter(Boolean) : [];
+
+  const src = v(r, '得知本次招募的管道（可複選）');
+  const ref = v(r, '若朋友介紹，請填介紹人姓名');
+  const platform = v(r, '若人力銀行，請填平台名稱');
+  const sevenExp = v(r, '是否有統一超商經歷：');
+  const storeRef = v(r, '若是，請填直營或加盟店及門市名稱');
+  const loc = v(r, '期望工作地點（可複選）');
+  const note = v(r, '其他特殊條件或備註');
+
+  const html = `
+    <div class="rh">
+      <div class="avatar">${init}</div>
+      <div>
+        <div class="rname">${name}</div>
+        <div class="rsub">央大門市 &amp; 豐亞門市｜門市人員應徵履歷</div>
+      </div>
+    </div>
+    <div class="rb">
+
+      <div>
+        <div class="rsec">
+          <div class="sh">【第一節】個人基本資料</div>
+          ${fr('身份證字號', v(r,'身份證字號'))}
+          ${fr('出生年月日', v(r,'出生年月日（西元，例：1990/05/20）'))}
+          ${fr('居住地址', v(r,'居住地址'))}
+          ${fr('住家電話', v(r,'住家電話'))}
+          ${fr('行動電話', v(r,'行動電話（手機）'))}
+          ${fr('E-mail', v(r,'E-mail') || v(r,'Email'))}
+          ${fr('緊急聯絡人', v(r,'緊急聯絡人'))}
+          ${fr('緊急聯絡電話', v(r,'緊急聯絡人電話'))}
+        </div>
+        <div class="rsec">
+          <div class="sh">學歷</div>
+          ${fr('畢業學校', v(r,'畢業學校'))}
+          ${fr('就讀科系', v(r,'就讀科系'))}
+        </div>
+        <div class="rsec">
+          <div class="sh">統一超商經歷</div>
+          ${fr('曾任職 7-11', sevenExp)}
+          ${fr('門市名稱', storeRef)}
+        </div>
+      </div>
+
+      <div>
+        <div class="rsec">
+          <div class="sh">【第三節】期望工作條件</div>
+          ${fr('期望工作地點', loc)}
+          ${fr('交通工具', v(r,'交通工具'))}
+          ${note ? fr('特殊備註', note) : ''}
+          ${shiftArr.length ? `
+            <div style="margin-top:5px;">
+              <div class="fl" style="margin-bottom:4px;">期望班別</div>
+              <div class="sbadges">${shiftArr.map(s => `<span class="sbadge">${s}</span>`).join('')}</div>
+            </div>` : ''}
+        </div>
+        <div class="rsec">
+          <div class="sh">【第四節】招募訊息來源</div>
+          ${fr('得知管道', src)}
+          ${fr('介紹人姓名', ref)}
+          ${fr('人力銀行平台', platform)}
+        </div>
+      </div>
+
+      <div class="fw">
+        <div class="rsec">
+          <div class="sh">【第二節】工作經歷</div>
+          <div class="two-col">
+            <div>${buildExp(r, 1)}</div>
+            <div>${buildExp(r, 2)}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="agree">
+      ✓ 應徵者已詳閱並同意個資聲明與同意書｜本資料僅供面試徵才使用，於填寫日期後一個月內銷毀
+    </div>
+  `;
+
+  const el = document.getElementById('a4');
+  el.innerHTML = html;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function clearAll() {
+  document.getElementById('ta').value = '';
+  document.getElementById('status').textContent = '';
+  document.getElementById('sel-row').style.display = 'none';
+  document.getElementById('hint').style.display = 'none';
+  document.getElementById('a4').style.display = 'none';
+  recs = []; hdrs = [];
+}
+</script>
+</body>
+</html>
