@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>應徵履歷列印工具｜央大門市 &amp; 豐亞門市</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--green:#1a5c3a;--gold:#e6a817;--text:#111;--bg:#ddd;--radius:8px;}
+body{font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--text);}
+header{background:var(--green);color:#fff;padding:16px 32px;display:flex;align-items:center;gap:14px;}
+.hl{width:40px;height:40px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#0f3d26;flex-shrink:0;}
+.ht{font-size:16px;font-weight:700;}.hs{font-size:11px;opacity:.7;margin-top:2px;}
+.wrap{max-width:900px;margin:0 auto;padding:22px 20px 50px;}
+.card{background:#fff;border-radius:var(--radius);border:1px solid #bbb;padding:20px 22px;margin-bottom:14px;}
+.ct{font-size:13px;font-weight:700;color:var(--green);margin-bottom:12px;padding-left:10px;border-left:4px solid var(--green);}
+.step{display:flex;align-items:flex-start;gap:10px;margin-bottom:7px;}
+.sn{width:22px;height:22px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.st{font-size:13px;color:#555;line-height:1.6;}
+textarea{width:100%;height:100px;font-size:11.5px;font-family:'Courier New',monospace;padding:10px 12px;border:1px solid #bbb;border-radius:var(--radius);background:#fafafa;color:#111;resize:vertical;}
+textarea:focus{outline:none;border-color:var(--green);}
+.br{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
+.btn{padding:8px 20px;font-size:13px;font-family:inherit;font-weight:500;border-radius:var(--radius);cursor:pointer;border:none;}
+.bp{background:var(--green);color:#fff;}.bp:hover{background:#0f3d26;}
+.bo{background:#fff;color:#111;border:1px solid #bbb;}.bo:hover{background:#eee;}
+.bpr{background:var(--gold);color:#0f3d26;font-weight:700;}.bpr:hover{background:#c9900f;}
+.bdanger{background:#c0392b;color:#fff;font-size:12px;padding:6px 14px;}.bdanger:hover{background:#a93226;}
+#status{font-size:12px;color:var(--green);margin-top:8px;min-height:18px;font-weight:500;}
+#status.err{color:#c0392b;}
+#selrow{display:none;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap;padding:12px 16px;background:#eaf4ee;border-radius:var(--radius);border:1px solid #b8dbc8;}
+#selrow label{font-size:13px;font-weight:700;color:var(--green);}
+select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa;border-radius:var(--radius);background:#fff;color:#111;cursor:pointer;}
+.api-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+.api-row input{flex:1;min-width:200px;padding:8px 12px;font-size:13px;font-family:inherit;border:1px solid #bbb;border-radius:var(--radius);background:#fafafa;color:#111;}
+.api-row input:focus{outline:none;border-color:var(--green);}
+.api-saved{font-size:12px;color:var(--green);font-weight:700;}
+.upload-area{border:2.5px dashed #bbb;border-radius:var(--radius);padding:24px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:#fafafa;margin-bottom:12px;}
+.upload-area:hover,.upload-area.dragover{border-color:var(--green);background:#eaf4ee;}
+.upload-area input[type=file]{display:none;}
+.upload-icon{font-size:28px;margin-bottom:6px;}
+.upload-text{font-size:13px;color:#666;line-height:1.6;}
+.upload-text strong{color:var(--green);}
+.img-preview{display:none;margin-bottom:10px;text-align:center;}
+.img-preview img{max-width:100%;max-height:240px;border-radius:var(--radius);border:1px solid #ccc;}
+.ai-status{font-size:12px;font-weight:700;min-height:20px;margin-bottom:6px;}
+.ai-status.loading{color:#e67e22;}
+.ai-status.ok{color:var(--green);}
+.ai-status.err{color:#c0392b;}
+
+/* 比對結果 */
+.match-list{margin-top:10px;display:none;}
+.match-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;margin-bottom:4px;font-size:12px;}
+.match-item.hit{background:#eaf4ee;color:#0f3d26;}
+.match-item.miss{background:#fef3cd;color:#856404;}
+.match-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.hit .match-dot{background:var(--green);}
+.miss .match-dot{background:#e6a817;}
+
+/* A4 Wrapper */
+#a4wrap{display:none;background:#888;padding:28px 0 48px;margin-top:20px;}
+#a4lbl{text-align:center;font-size:12px;color:#ddd;margin-bottom:12px;}
+
+/* A4 Sheet */
+#a4{width:794px;min-height:1123px;margin:0 auto;background:#fff;color:#000;font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;font-size:12.5px;line-height:1.6;box-shadow:0 6px 32px rgba(0,0,0,.45);position:relative;overflow:hidden;}
+.rh{background:#000;color:#fff;padding:18px 36px;display:flex;align-items:center;gap:18px;}
+.av{width:54px;height:54px;border-radius:50%;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;flex-shrink:0;}
+.rname{font-size:26px;font-weight:900;letter-spacing:.06em;}
+.rsub{font-size:11px;opacity:.6;margin-top:3px;}
+.rbody{padding:18px 36px 16px;}
+.sh{display:block;font-size:12px;font-weight:900;color:#000;background:#e8e8e8;border-left:6px solid #000;padding:4px 10px;margin-bottom:7px;letter-spacing:.04em;}
+.tg{display:grid;grid-template-columns:1.1fr 0.95fr 0.85fr;gap:0 22px;margin-bottom:16px;}
+.rsec{margin-bottom:14px;}
+.fr{display:flex;padding:3px 0;border-bottom:1px solid #ccc;}
+.fl{font-size:11px;font-weight:700;color:#333;min-width:72px;flex-shrink:0;}
+.fv{font-size:12.5px;font-weight:500;color:#000;word-break:break-all;flex:1;}
+.hdiv{border:none;border-top:2.5px solid #000;margin:0 0 14px;}
+.exgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.eb{border:2.5px solid #000;padding:10px 12px;border-radius:4px;}
+.ebnone{border:2px dashed #bbb;padding:10px 12px;border-radius:4px;color:#bbb;font-size:11px;display:flex;align-items:center;justify-content:center;min-height:80px;}
+.ec{font-size:14px;font-weight:900;color:#000;margin-bottom:6px;padding-bottom:5px;border-bottom:2px solid #000;}
+.ef{display:flex;padding:2px 0;border-bottom:1px solid #eee;}
+.efl{font-size:11px;font-weight:700;color:#444;min-width:58px;flex-shrink:0;}
+.efv{font-size:12px;font-weight:500;color:#000;}
+.sbadges{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+.sbadge{background:#000;color:#fff;border-radius:3px;padding:2px 8px;font-size:11px;font-weight:700;}
+.talent-block{border-top:3px solid #000;padding:14px 36px 80px;background:#fff;}
+.talent-title{font-size:13px;font-weight:900;text-align:center;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;gap:8px;justify-content:center;}
+.talent-title::before,.talent-title::after{content:'';flex:1;height:1.5px;background:#000;}
+.energy-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.energy-item{border:2px solid #000;border-radius:4px;padding:7px 8px;text-align:center;}
+.energy-icon{font-size:18px;line-height:1;}
+.energy-label{font-size:11px;font-weight:700;margin-top:2px;}
+.energy-pct{font-size:16px;font-weight:900;margin-top:1px;}
+.cards-row{display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;}
+.card-chip{border:2px solid #000;border-radius:5px;padding:7px 10px;text-align:center;min-width:78px;flex:1;max-width:96px;}
+.card-num{font-size:20px;font-weight:900;line-height:1;}
+.card-name{font-size:10px;font-weight:700;margin-top:3px;letter-spacing:.02em;}
+.talent-bottom{display:grid;grid-template-columns:2fr 1fr 2fr;gap:10px;margin-bottom:8px;}
+.tb-title{font-size:11px;font-weight:900;text-align:center;border-bottom:2px solid #000;padding-bottom:3px;margin-bottom:7px;letter-spacing:.05em;}
+.tb-cards{display:flex;gap:6px;justify-content:center;}
+.card-chip-sm{border:2px solid #000;border-radius:4px;padding:5px 8px;text-align:center;min-width:68px;}
+.card-chip-sm .card-num{font-size:16px;}
+.card-chip-sm .card-name{font-size:9.5px;}
+.year-card{border:2px solid #000;border-radius:4px;padding:5px 8px;text-align:center;min-width:80px;}
+.year-card .yr{font-size:9px;font-weight:700;color:#555;margin-bottom:2px;}
+.year-card .card-num{font-size:15px;}
+.year-card .card-name{font-size:9px;}
+.agree{position:absolute;bottom:20px;left:36px;right:36px;border-top:1px solid #aaa;padding-top:6px;font-size:9px;color:#999;text-align:center;}
+#export-status{font-size:12px;color:var(--green);font-weight:700;margin-top:6px;min-height:18px;}
+
+@media print{
+  body{background:#fff;}
+  header,.wrap,#a4lbl{display:none!important;}
+  #a4wrap{display:block!important;background:#fff;padding:0;margin:0;}
+  #a4{width:210mm;min-height:297mm;margin:0;box-shadow:none;font-size:12px;}
+  .rh{padding:12mm 16mm 14px;}
+  .rbody{padding:14px 16mm 10px;}
+  .talent-block{padding:12px 16mm 18mm;}
+  .agree{bottom:8mm;left:16mm;right:16mm;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hl">7</div>
+  <div><div class="ht">應徵履歷列印工具</div><div class="hs">央大門市 &amp; 豐亞門市｜門市人員應徵表</div></div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <div class="ct">使用說明</div>
+    <div class="step"><div class="sn">1</div><div class="st">貼上 Google 試算表資料，按「解析資料」選擇應徵者</div></div>
+    <div class="step"><div class="sn">2</div><div class="st">上傳 MMT 系統的表格截圖（1~6人）→ AI 自動辨識並依姓名對應</div></div>
+    <div class="step"><div class="sn">3</div><div class="st">選擇應徵者，預覽即時產生，按列印 / 存 PNG / 存 PDF</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Claude API Key（圖片辨識用，僅存於本機）</div>
+    <div class="api-row">
+      <input type="password" id="api-key" placeholder="sk-ant-api03-…" autocomplete="off">
+      <button class="btn bp" onclick="saveKey()">儲存</button>
+      <button class="btn bdanger" onclick="clearKey()">清除</button>
+      <span class="api-saved" id="key-saved"></span>
+    </div>
+    <div style="font-size:11px;color:#999;">API Key 只存在你的瀏覽器 localStorage，不會傳送到任何第三方。</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">步驟一：貼上試算表資料</div>
+    <textarea id="ta" placeholder="請複製試算表「標題列＋資料列」後貼到這裡&#10;&#10;時間戳記	Email	姓名	身份證字號	出生年月日…"></textarea>
+    <div id="status"></div>
+    <div class="br">
+      <button class="btn bp" onclick="parseData()">解析資料</button>
+      <button class="btn bo" onclick="clearAll()">清除</button>
+    </div>
+    <div id="selrow">
+      <label>選擇應徵者：</label>
+      <select id="sel" onchange="renderResume()"></select>
+    </div>
+  </div>
+
+  <div class="card" id="step2-card" style="display:none;">
+    <div class="ct">步驟二：上傳 MMT 系統表格截圖（AI 自動辨識 1~6 人）</div>
+    <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+      <input type="file" id="file-input" accept="image/*" onchange="handleFile(event)">
+      <div class="upload-icon">📊</div>
+      <div class="upload-text"><strong>點擊選擇 MMT 表格截圖</strong>，或直接拖曳圖片到這裡<br>支援 PNG、JPG、WebP｜可包含多人資料</div>
+    </div>
+    <div class="img-preview" id="img-preview">
+      <img id="preview-img" src="" alt="預覽">
+      <div style="margin-top:8px;">
+        <button class="btn bdanger" onclick="resetImage()" style="font-size:12px;padding:6px 14px;">✕ 重新上傳截圖</button>
+      </div>
+    </div>
+    <div class="ai-status" id="ai-status"></div>
+    <div class="match-list" id="match-list"></div>
+
+    <div class="br" style="margin-top:16px;">
+      <button class="btn bpr" onclick="window.print()">🖨 列印</button>
+      <button class="btn bp" onclick="savePNG()">🖼 儲存 PNG</button>
+      <button class="btn bp" onclick="savePDF()">📄 儲存 PDF</button>
+    </div>
+    <div style="font-size:12px;color:#999;margin-top:8px;">💡 列印設定：A4 → 取消頁首頁尾 → 縮放「符合頁面」</div>
+    <div id="export-status"></div>
+  </div>
+
+</div>
+
+<div id="a4wrap">
+  <div id="a4lbl">▼ A4 預覽</div>
+  <div id="a4"></div>
+</div>
+
+<script>
+/* ── MMT 牌號對照表 ── */
+const CARD_MAP = {
+  '0':'創意家','1':'整合者','2':'敏銳者','3':'美學家','4':'挑戰者',
+  '5':'傳教者','6':'演繹家','7':'守護者','8':'啟導者','9':'穿透者',
+  '10':'顯化者','11':'權威者','12':'趨勢家','13':'改革者','14':'使命家',
+  '15':'策略家','16':'執行家','17':'理想家','18':'感知者','19':'光之子',
+  '20':'計畫者','21':'建構者'
+};
+function cardName(n){
+  const k=String(n).trim();
+  return CARD_MAP[k]?`${k} ${CARD_MAP[k]}`:k;
+}
+
+let recs=[], hdrs=[], talentMap={}, currentImgB64='', currentImgType='';
+
+/* ── API Key ── */
+window.addEventListener('DOMContentLoaded',()=>{
+  const k=localStorage.getItem('claude_api_key');
+  if(k){document.getElementById('api-key').value=k;document.getElementById('key-saved').textContent='✓ 已儲存';}
+});
+function saveKey(){
+  const k=document.getElementById('api-key').value.replace(/\s/g,'').trim();
+  if(!k)return;
+  localStorage.setItem('claude_api_key',k);
+  document.getElementById('api-key').value=k;
+  document.getElementById('key-saved').textContent='✓ 已儲存';
+}
+function clearKey(){localStorage.removeItem('claude_api_key');document.getElementById('api-key').value='';document.getElementById('key-saved').textContent='';}
+function getKey(){const k=localStorage.getItem('claude_api_key')||document.getElementById('api-key').value;return k.replace(/\s/g,'').trim();}
+
+function resetImage(){
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('preview-img').src='';
+  document.getElementById('ai-status').textContent='';
+  document.getElementById('ai-status').className='ai-status';
+  document.getElementById('match-list').style.display='none';
+  document.getElementById('match-list').innerHTML='';
+  document.getElementById('file-input').value='';
+  document.getElementById('upload-area').style.display='block';
+  currentImgB64='';currentImgType='';
+  talentMap={};
+  renderResume();
+}
+
+/* ── 姓名相似度（字符重疊比例）── */
+function nameSimilarity(a,b){
+  if(a===b)return 1;
+  if(!a||!b)return 0;
+  let match=0;
+  const shorter=a.length<=b.length?a:b;
+  const longer=a.length<=b.length?b:a;
+  for(const ch of shorter){if(longer.includes(ch))match++;}
+  return match/longer.length;
+}
+
+/* ── 找最佳姓名比對 ── */
+function findBestMatch(name, talentArr){
+  let best=null, bestScore=0;
+  for(const td of talentArr){
+    const score=nameSimilarity(name, td.name||'');
+    if(score>bestScore){bestScore=score;best=td;}
+  }
+  // 至少2個字元重疊且相似度>0.5才接受
+  if(bestScore>=0.5 && best) return {td:best, score:bestScore};
+  return null;
+}
+function parseData(){
+  const raw=document.getElementById('ta').value.trim();
+  const st=document.getElementById('status');
+  if(!raw){st.className='err';st.textContent='⚠ 請先貼上資料。';return;}
+  const lines=raw.split('\n').filter(l=>l.trim());
+  if(lines.length<2){st.className='err';st.textContent='⚠ 需要標題列＋至少一筆資料。';return;}
+  hdrs=lines[0].split('\t').map(h=>h.trim());
+  recs=lines.slice(1).map(line=>{const c=line.split('\t'),o={};hdrs.forEach((h,i)=>o[h]=(c[i]||'').trim());return o;});
+  st.className='';st.textContent=`✓ 已解析 ${recs.length} 筆應徵資料`;
+  const sel=document.getElementById('sel');
+  sel.innerHTML=recs.map((r,i)=>`<option value="${i}">${r['姓名']||'第'+(i+1)+'筆'}</option>`).join('');
+  document.getElementById('selrow').style.display='flex';
+  document.getElementById('step2-card').style.display='block';
+  renderResume();
+}
+
+/* ── 圖片上傳 ── */
+function dragOver(e){e.preventDefault();document.getElementById('upload-area').classList.add('dragover');}
+function dragLeave(){document.getElementById('upload-area').classList.remove('dragover');}
+function dropFile(e){e.preventDefault();document.getElementById('upload-area').classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)processImageFile(f);}
+function handleFile(e){const f=e.target.files[0];if(f)processImageFile(f);}
+function processImageFile(file){
+  if(!file.type.startsWith('image/')){alert('請上傳圖片檔案');return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const dataUrl=e.target.result;
+    currentImgB64=dataUrl.split(',')[1];currentImgType=file.type;
+    document.getElementById('preview-img').src=dataUrl;
+    document.getElementById('img-preview').style.display='block';
+    analyzeMMT();
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ── AI 辨識 MMT 表格 ── */
+async function analyzeMMT(){
+  const key=getKey();
+  if(!key){
+    setAIStatus('err','⚠ 請先填入 Claude API Key');
+    return;
+  }
+  setAIStatus('loading','🔍 AI 辨識表格中，請稍候…');
+
+  const prompt=`這是 MMT 天賦系統的表格截圖，表格欄位順序固定如下：
+姓名 | 位階 | 風能量% | 火能量% | 水能量% | 土能量% | 年度策略(目前) | 年度策略(生日後) | T1 | T2 | T3 | T4 | T5 | T6 | T7 | M1 | M2 | M3 | S1 | S2
+
+請辨識表格中所有人的資料（可能1到6人），以 JSON 陣列回傳，不要有任何其他文字或 markdown：
+[
+  {
+    "name": "姓名",
+    "wind": "風能量數字（不含%）",
+    "fire": "火能量數字",
+    "water": "水能量數字",
+    "earth": "土能量數字",
+    "year_now": "年度策略目前的牌號數字",
+    "year_after": "年度策略生日後的牌號數字",
+    "t1":"","t2":"","t3":"","t4":"","t5":"","t6":"","t7":"",
+    "m1":"","m2":"","m3":"",
+    "s1":"","s2":""
+  }
+]
+欄位只填數字（例如：8、13、17），如果該欄位是空的或「—」填入空字串""。`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-5',
+        max_tokens:2000,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image',source:{type:'base64',media_type:currentImgType,data:currentImgB64}},
+            {type:'text',text:prompt}
+          ]
+        }]
+      })
+    });
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message);
+    const text=data.content[0].text.trim();
+    const start=text.indexOf('[');
+    const end=text.lastIndexOf(']');
+    if(start===-1||end===-1)throw new Error('AI 未回傳陣列格式，請重試');
+    const clean=text.slice(start,end+1);
+    let arr;
+    try{arr=JSON.parse(clean);}
+    catch(pe){throw new Error('JSON 解析失敗，請重試');}
+    if(!Array.isArray(arr)||arr.length===0)throw new Error('辨識結果為空，請重試');
+    processTalentData(arr);
+  }catch(err){
+    setAIStatus('err','⚠ 辨識失敗：'+err.message);
+  }
+}
+
+function setAIStatus(cls,msg){
+  const el=document.getElementById('ai-status');
+  el.className='ai-status '+cls;el.textContent=msg;
+}
+
+function processTalentData(arr){
+  try{
+    talentMap={};
+    if(!Array.isArray(arr))throw new Error('回傳格式不是陣列');
+
+    const matchEl=document.getElementById('match-list');
+    matchEl.style.display='block';
+    matchEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#333;margin-bottom:6px;">姓名比對結果：</div>';
+
+    let hitCount=0;
+    recs.forEach(r=>{
+      const name=(r['姓名']||'').trim();
+      // 先嘗試完全比對
+      const exactMatch=arr.find(p=>String(p.name||'').trim()===name);
+      if(exactMatch){
+        talentMap[name]=exactMatch;
+        hitCount++;
+        matchEl.innerHTML+=`<div class="match-item hit"><div class="match-dot"></div><span>${name}</span><span style="margin-left:auto;font-size:11px;">✓ 完全比對</span></div>`;
+        return;
+      }
+      // 模糊比對
+      const fuzzy=findBestMatch(name, arr);
+      if(fuzzy){
+        talentMap[name]=fuzzy.td;
+        hitCount++;
+        const pct=Math.round(fuzzy.score*100);
+        matchEl.innerHTML+=`<div class="match-item hit"><div class="match-dot"></div><span>${name}</span><span style="margin-left:auto;font-size:11px;">✓ 模糊比對（${fuzzy.td.name}，相似度${pct}%）</span></div>`;
+      } else {
+        matchEl.innerHTML+=`<div class="match-item miss"><div class="match-dot"></div><span>${name}</span><span style="margin-left:auto;font-size:11px;">⚠ 未找到對應</span></div>`;
+      }
+    });
+
+    setAIStatus('ok',`✓ 辨識完成！共 ${arr.length} 人資料，成功對應 ${hitCount} / ${recs.length} 位應徵者`);
+    renderResume();
+  }catch(e){
+    setAIStatus('err','⚠ 資料處理失敗：'+e.message);
+  }
+}
+
+/* ── 輔助函式 ── */
+function v(r,key){return(r[key]||'').trim();}
+function fr(label,val){if(!val||val==='無')return'';return`<div class="fr"><span class="fl">${label}</span><span class="fv">${val}</span></div>`;}
+function ef(label,val){if(!val||val==='無')return'';return`<div class="ef"><span class="efl">${label}</span><span class="efv">${val}</span></div>`;}
+
+function buildExp(r,num){
+  const ch=num===1?'一':'二';
+  const co=v(r,`【經歷${ch}】服務機關名稱`);
+  if(!co||co==='無')return`<div class="ebnone">無第${ch}段工作經歷</div>`;
+  let ti='',pe='',pw='',re='';
+  if(num===1){ti=v(r,'職位名稱');pw=v(r,'待遇');pe=v(r,'任職期間（例：2020/03 至 2022/06）')||v(r,'任職期間');re=v(r,'離職原因');}
+  else{const keys=Object.keys(r);const i2=keys.findIndex(k=>k===`【經歷${ch}】服務機關名稱`);if(i2>-1){ti=r[keys[i2+1]]||'';pe=r[keys[i2+2]]||'';re=r[keys[i2+3]]||'';}}
+  return`<div class="eb"><div class="ec">${co}</div>${ef('職稱',ti)}${num===1&&pw?ef('待遇',pw):''}${ef('任職期間',pe)}${ef('離職原因',re)}</div>`;
+}
+
+function chipHtml(numStr,cls){
+  const n=(numStr||'').trim();
+  if(!n)return`<div class="${cls}"><div class="card-num">—</div><div class="card-name"></div></div>`;
+  const name=CARD_MAP[n]||'';
+  return`<div class="${cls}"><div class="card-num">${n}</div><div class="card-name">${name}</div></div>`;
+}
+
+function buildTalentBlock(td){
+  if(!td)return`<div class="talent-block"><div class="talent-title">天賦設計</div><div style="text-align:center;color:#bbb;font-size:12px;padding:20px;">尚未上傳 MMT 表格截圖</div></div>`;
+
+  const wind=td.wind||'—',fire=td.fire||'—',water=td.water||'—',earth=td.earth||'—';
+  const cards=['t1','t2','t3','t4','t5','t6','t7'].map(k=>td[k]||'');
+  const m1=td.m1||'',m2=td.m2||'',m3=td.m3||'';
+  const s1=td.s1||'',s2=td.s2||'';
+  const yn=td.year_now||'',ya=td.year_after||'';
+
+  const yr1html=yn?`<div class="year-card"><div class="yr">目前</div><div class="card-num">${yn}</div><div class="card-name">${CARD_MAP[yn]||''}</div></div>`:`<div class="year-card"><div class="card-num">—</div></div>`;
+  const yr2html=ya?`<div class="year-card"><div class="yr">生日後</div><div class="card-num">${ya}</div><div class="card-name">${CARD_MAP[ya]||''}</div></div>`:`<div class="year-card"><div class="card-num">—</div></div>`;
+
+  return`<div class="talent-block">
+    <div class="talent-title">天賦設計（MMT 天賦系統）</div>
+    <div class="energy-row">
+      <div class="energy-item"><div class="energy-icon">🌬</div><div class="energy-label">風能量</div><div class="energy-pct">${wind}%</div></div>
+      <div class="energy-item"><div class="energy-icon">🔥</div><div class="energy-label">火能量</div><div class="energy-pct">${fire}%</div></div>
+      <div class="energy-item"><div class="energy-icon">💧</div><div class="energy-label">水能量</div><div class="energy-pct">${water}%</div></div>
+      <div class="energy-item"><div class="energy-icon">🪨</div><div class="energy-label">土能量</div><div class="energy-pct">${earth}%</div></div>
+    </div>
+    <div class="sh" style="margin-bottom:8px;">天賦牌組</div>
+    <div class="cards-row">${cards.map(c=>chipHtml(c,'card-chip')).join('')}</div>
+    <div class="talent-bottom">
+      <div>
+        <div class="tb-title">導師牌</div>
+        <div class="tb-cards">${chipHtml(m1,'card-chip-sm')}${chipHtml(m2,'card-chip-sm')}${m3?chipHtml(m3,'card-chip-sm'):''}</div>
+      </div>
+      <div>
+        <div class="tb-title">陰影牌</div>
+        <div class="tb-cards">${chipHtml(s1,'card-chip-sm')}${s2?chipHtml(s2,'card-chip-sm'):''}</div>
+      </div>
+      <div>
+        <div class="tb-title">年度策略</div>
+        <div class="tb-cards">${yr1html}${yr2html}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderResume(){
+  const idx=parseInt(document.getElementById('sel').value||'0');
+  const r=recs[idx];if(!r)return;
+  const name=v(r,'姓名');
+  const init=name?name[0]:'?';
+  const td=talentMap[name]||null;
+  const shifts=v(r,'期望上班班別（可複選）');
+  const shiftArr=shifts?shifts.split(/[，,、]/).map(s=>s.trim()).filter(Boolean):[];
+  const src=v(r,'得知本次招募的管道（可複選）');
+  const ref=v(r,'若朋友介紹，請填介紹人姓名');
+  const platform=v(r,'若人力銀行，請填平台名稱');
+  const sevenExp=v(r,'是否有統一超商經歷：');
+  const storeRef=v(r,'若是，請填直營或加盟店及門市名稱');
+  const loc=v(r,'期望工作地點（可複選）');
+  const note=v(r,'其他特殊條件或備註');
+
+  document.getElementById('a4').innerHTML=`
+    <div class="rh"><div class="av">${init}</div><div><div class="rname">${name}</div><div class="rsub">央大門市 &amp; 豐亞門市｜門市人員應徵履歷</div></div></div>
+    <div class="rbody">
+      <div class="tg">
+        <div>
+          <div class="rsec">
+            <div class="sh">個人基本資料</div>
+            ${fr('身份證字號',v(r,'身份證字號'))}
+            ${fr('出生年月日',v(r,'出生年月日（西元，例：1990/05/20）'))}
+            ${fr('居住地址',v(r,'居住地址'))}
+            ${fr('住家電話',v(r,'住家電話'))}
+            ${fr('行動電話',v(r,'行動電話（手機）'))}
+            ${fr('E-mail',v(r,'E-mail')||v(r,'Email'))}
+            ${fr('緊急聯絡人',v(r,'緊急聯絡人'))}
+            ${fr('緊急聯絡電話',v(r,'緊急聯絡人電話'))}
+          </div>
+          <div class="rsec"><div class="sh">學歷</div>${fr('畢業學校',v(r,'畢業學校'))}${fr('就讀科系',v(r,'就讀科系'))}</div>
+          <div class="rsec"><div class="sh">統一超商經歷</div>${fr('曾任職 7-11',sevenExp)}${storeRef?fr('門市名稱',storeRef):''}</div>
+        </div>
+        <div>
+          <div class="rsec">
+            <div class="sh">期望工作條件</div>
+            ${fr('期望地點',loc)}${fr('交通工具',v(r,'交通工具'))}${note?fr('備註',note):''}
+            ${shiftArr.length?`<div style="margin-top:6px;"><div style="font-size:11px;font-weight:700;color:#333;margin-bottom:5px;">期望班別</div><div class="sbadges">${shiftArr.map(s=>`<span class="sbadge">${s}</span>`).join('')}</div></div>`:''}
+          </div>
+        </div>
+        <div>
+          <div class="rsec"><div class="sh">招募訊息來源</div>${fr('得知管道',src)}${ref?fr('介紹人',ref):''}${platform?fr('人力銀行',platform):''}</div>
+        </div>
+      </div>
+      <hr class="hdiv">
+      <div class="rsec"><div class="sh">工作經歷</div><div style="height:8px;"></div><div class="exgrid"><div>${buildExp(r,1)}</div><div>${buildExp(r,2)}</div></div></div>
+    </div>
+    ${buildTalentBlock(td)}
+    <div class="agree">✓ 應徵者已詳閱並同意個資聲明與同意書｜本資料僅供面試徵才使用，於填寫日期後一個月內銷毀</div>
+  `;
+
+  const wrap=document.getElementById('a4wrap');
+  wrap.style.display='block';
+  wrap.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ── PNG / PDF ── */
+async function savePNG(){
+  const el=document.getElementById('a4');
+  if(!el||!el.innerHTML){alert('請先產生履歷預覽');return;}
+  const st=document.getElementById('export-status');
+  st.textContent='⏳ 產生 PNG 中…';
+  try{
+    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+    const link=document.createElement('a');
+    const name=document.querySelector('.rname');
+    link.download=(name?name.textContent:'履歷')+'_A4.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    st.textContent='✓ PNG 已下載';setTimeout(()=>st.textContent='',3000);
+  }catch(e){st.textContent='⚠ PNG 失敗：'+e.message;}
+}
+async function savePDF(){
+  const el=document.getElementById('a4');
+  if(!el||!el.innerHTML){alert('請先產生履歷預覽');return;}
+  const st=document.getElementById('export-status');
+  st.textContent='⏳ 產生 PDF 中…';
+  try{
+    const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+    const imgData=canvas.toDataURL('image/png');
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const w=pdf.internal.pageSize.getWidth(),h=pdf.internal.pageSize.getHeight();
+    pdf.addImage(imgData,'PNG',0,0,w,h);
+    const name=document.querySelector('.rname');
+    pdf.save((name?name.textContent:'履歷')+'_A4.pdf');
+    st.textContent='✓ PDF 已下載';setTimeout(()=>st.textContent='',3000);
+  }catch(e){st.textContent='⚠ PDF 失敗：'+e.message;}
+}
+
+function clearAll(){
+  document.getElementById('ta').value='';
+  document.getElementById('status').textContent='';
+  document.getElementById('selrow').style.display='none';
+  document.getElementById('step2-card').style.display='none';
+  document.getElementById('a4wrap').style.display='none';
+  document.getElementById('a4').innerHTML='';
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('ai-status').textContent='';
+  document.getElementById('match-list').style.display='none';
+  document.getElementById('match-list').innerHTML='';
+  document.getElementById('file-input').value='';
+  document.getElementById('upload-area').style.display='block';
+  recs=[];hdrs=[];talentMap={};currentImgB64='';currentImgType='';
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</body>
+</html>
