@@ -131,9 +131,9 @@ select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa
 
   <div class="card">
     <div class="ct">使用說明</div>
-    <div class="step"><div class="sn">1</div><div class="st">貼上 Google 試算表資料，按「解析資料」選擇應徵者</div></div>
-    <div class="step"><div class="sn">2</div><div class="st">上傳 MMT 系統的表格截圖（1~6人）→ AI 自動辨識並依姓名對應</div></div>
-    <div class="step"><div class="sn">3</div><div class="st">選擇應徵者，預覽即時產生，按列印 / 存 PNG / 存 PDF</div></div>
+    <div class="step"><div class="sn">1</div><div class="st"><strong>直接貼上</strong> Google 試算表資料（可含或不含標題列）→ 自動解析、自動預覽</div></div>
+    <div class="step"><div class="sn">2</div><div class="st">按「儲存 PNG」出單張，或「全部匯出 PNG」一次出所有應徵者</div></div>
+    <div class="step"><div class="sn">3</div><div class="st">（選用）上傳 MMT 表格截圖 → AI 辨識天賦資料；不上傳就不會印天賦區</div></div>
   </div>
 
   <div class="card">
@@ -149,16 +149,28 @@ select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa
 
   <div class="card">
     <div class="ct">步驟一：貼上試算表資料</div>
-    <textarea id="ta" placeholder="請複製試算表「標題列＋資料列」後貼到這裡&#10;&#10;時間戳記	Email	姓名	身份證字號	出生年月日…"></textarea>
+    <textarea id="ta" oninput="autoParse()" placeholder="直接貼上就好（貼完自動解析、自動預覽）&#10;可含標題列，也可以只貼資料列&#10;&#10;時間戳記	Email	姓名	身份證字號	出生年月日…"></textarea>
     <div id="status"></div>
     <div class="br">
-      <button class="btn bp" onclick="parseData()">解析資料</button>
+      <button class="btn bp" onclick="parseData()">重新解析</button>
       <button class="btn bo" onclick="clearAll()">清除</button>
     </div>
     <div id="selrow">
       <label>選擇應徵者：</label>
       <select id="sel" onchange="onSelectApplicant()"></select>
     </div>
+  </div>
+
+  <div class="card" id="export-card" style="display:none;">
+    <div class="ct">輸出履歷</div>
+    <div class="br" style="margin-top:0;">
+      <button class="btn bp" onclick="savePNG()">🖼 儲存 PNG（這一位）</button>
+      <button class="btn bpr" onclick="saveAllPNG()">📦 全部匯出 PNG</button>
+      <button class="btn bo" onclick="savePDF()">📄 儲存 PDF</button>
+      <button class="btn bo" onclick="window.print()">🖨 列印</button>
+    </div>
+    <div style="font-size:12px;color:#999;margin-top:8px;">💡 列印設定：A4 → 取消頁首頁尾 → 縮放「符合頁面」｜全部匯出時瀏覽器可能詢問「允許多重下載」，請按允許。</div>
+    <div id="export-status"></div>
   </div>
 
   <div class="card" id="step2-card" style="display:none;">
@@ -176,14 +188,6 @@ select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa
     </div>
     <div class="ai-status" id="ai-status"></div>
     <div class="match-list" id="match-list"></div>
-
-    <div class="br" style="margin-top:16px;">
-      <button class="btn bpr" onclick="window.print()">🖨 列印</button>
-      <button class="btn bp" onclick="savePNG()">🖼 儲存 PNG</button>
-      <button class="btn bp" onclick="savePDF()">📄 儲存 PDF</button>
-    </div>
-    <div style="font-size:12px;color:#999;margin-top:8px;">💡 列印設定：A4 → 取消頁首頁尾 → 縮放「符合頁面」</div>
-    <div id="export-status"></div>
   </div>
 
   <div class="card" id="talent-edit-card" style="display:none;">
@@ -267,21 +271,54 @@ function findBestMatch(name, talentArr){
   if(bestScore>=0.5 && best) return {td:best, score:bestScore};
   return null;
 }
-function parseData(){
-  const raw=document.getElementById('ta').value.trim();
+/* ── 沒有標題列時使用的預設欄位順序（Google 表單原始欄位）── */
+const DEFAULT_HDRS=['時間戳記','電子郵件地址','姓名','身份證字號','出生年月日（西元，例：1990/05/20）','居住地址','住家電話','行動電話（手機）','緊急聯絡人','緊急聯絡人電話','E-mail','畢業學校','就讀科系','【經歷一】服務機關名稱','職位名稱','待遇','任職期間（例：2020/03 至 2022/06）','離職原因','【經歷二】服務機關名稱','職位名稱2','任職期間2','離職原因2','是否有統一超商經歷：','若是，請填直營或加盟店及門市名稱','期望工作地點（可複選）','交通工具','期望上班班別（可複選）','其他特殊條件或備註','得知本次招募的管道（可複選）','若朋友介紹，請填介紹人姓名','若人力銀行，請填平台名稱','個資聲明','LINE ID（方便通知面試時間，請提供您的 LINE ID；若無 LINE 請填「無」）','我同意門市以電話或 LINE 與我聯繫面試相關事宜'];
+
+function looksLikeHeader(cells){
+  const joined=cells.join('');
+  return joined.includes('姓名')&&(joined.includes('身份證')||joined.includes('身分證')||joined.includes('時間戳記'));
+}
+
+/* ── 貼上即自動解析（debounce）── */
+let autoTimer=null;
+function autoParse(){
+  clearTimeout(autoTimer);
+  autoTimer=setTimeout(()=>{
+    if(document.getElementById('ta').value.trim())parseData(true);
+  },350);
+}
+
+function parseData(silent){
+  const raw=document.getElementById('ta').value.replace(/\r/g,'').trim();
   const st=document.getElementById('status');
-  if(!raw){st.className='err';st.textContent='⚠ 請先貼上資料。';return;}
+  if(!raw){if(!silent){st.className='err';st.textContent='⚠ 請先貼上資料。';}return;}
   const lines=raw.split('\n').filter(l=>l.trim());
-  if(lines.length<2){st.className='err';st.textContent='⚠ 需要標題列＋至少一筆資料。';return;}
-  hdrs=lines[0].split('\t').map(h=>h.trim());
-  recs=lines.slice(1).map(line=>{const c=line.split('\t'),o={};hdrs.forEach((h,i)=>o[h]=(c[i]||'').trim());return o;});
-  st.className='';st.textContent=`✓ 已解析 ${recs.length} 筆應徵資料`;
+  const first=lines[0].split('\t').map(h=>h.trim());
+  let dataLines;
+  if(looksLikeHeader(first)){
+    hdrs=first;dataLines=lines.slice(1);
+  }else{
+    hdrs=DEFAULT_HDRS.slice();dataLines=lines;
+  }
+  if(!dataLines.length){if(!silent){st.className='err';st.textContent='⚠ 只有標題列，沒有資料列。';}return;}
+  recs=dataLines.map(line=>{
+    const c=line.split('\t'),o={};
+    // 標題列有重複欄名（職位名稱／任職期間／離職原因各出現兩次），只保留第一次出現者，
+    // 第二段經歷改用欄位索引從 __cells 取值，避免被後面的欄位覆蓋。
+    hdrs.forEach((h,i)=>{if(o[h]===undefined)o[h]=(c[i]||'').trim();});
+    o.__cells=c.map(x=>(x||'').trim());
+    return o;
+  });
+  st.className='';st.textContent=`✓ 已解析 ${recs.length} 筆應徵資料${looksLikeHeader(first)?'':'（未偵測到標題列，已套用預設欄位順序）'}`;
   const sel=document.getElementById('sel');
+  const prev=sel.value;
   sel.innerHTML=recs.map((r,i)=>`<option value="${i}">${r['姓名']||'第'+(i+1)+'筆'}</option>`).join('');
+  if(prev&&recs[parseInt(prev)])sel.value=prev;
   document.getElementById('selrow').style.display='flex';
   document.getElementById('step2-card').style.display='block';
+  document.getElementById('export-card').style.display='block';
   renderTalentEditor();
-  renderResume();
+  renderResume(silent);
 }
 
 /* ── 圖片上傳 ── */
@@ -432,11 +469,17 @@ function ef(label,val){if(!val||val==='無')return'';return`<div class="ef"><spa
 
 function buildExp(r,num){
   const ch=num===1?'一':'二';
-  const co=v(r,`【經歷${ch}】服務機關名稱`);
+  const anchor=hdrs.indexOf(`【經歷${ch}】服務機關名稱`);
+  const cells=r.__cells||[];
+  const at=i=>(anchor>-1&&cells[anchor+i]!=null)?String(cells[anchor+i]).trim():'';
+  const co=anchor>-1?at(0):v(r,`【經歷${ch}】服務機關名稱`);
   if(!co||co==='無')return`<div class="ebnone">無第${ch}段工作經歷</div>`;
-  let ti='',pe='',pw='',re='';
-  if(num===1){ti=v(r,'職位名稱');pw=v(r,'待遇');pe=v(r,'任職期間（例：2020/03 至 2022/06）')||v(r,'任職期間');re=v(r,'離職原因');}
-  else{const keys=Object.keys(r);const i2=keys.findIndex(k=>k===`【經歷${ch}】服務機關名稱`);if(i2>-1){ti=r[keys[i2+1]]||'';pe=r[keys[i2+2]]||'';re=r[keys[i2+3]]||'';}}
+  // 經歷一：機關｜職位｜待遇｜期間｜離職原因（4 個後續欄位）
+  // 經歷二：機關｜職位｜期間｜離職原因（3 個後續欄位，沒有待遇）
+  let ti='',pw='',pe='',re='';
+  if(num===1){ti=at(1);pw=at(2);pe=at(3);re=at(4);}
+  else{ti=at(1);pe=at(2);re=at(3);}
+  if(anchor===-1&&num===1){ti=v(r,'職位名稱');pw=v(r,'待遇');pe=v(r,'任職期間（例：2020/03 至 2022/06）')||v(r,'任職期間');re=v(r,'離職原因');}
   return`<div class="eb"><div class="ec">${co}</div>${ef('職稱',ti)}${num===1&&pw?ef('待遇',pw):''}${ef('任職期間',pe)}${ef('離職原因',re)}</div>`;
 }
 
@@ -447,8 +490,15 @@ function chipHtml(numStr,cls){
   return`<div class="${cls}"><div class="card-num">${n}</div><div class="card-name">${name}</div></div>`;
 }
 
+function hasTalent(td){
+  if(!td)return false;
+  return ['wind','fire','water','earth','t1','t2','t3','t4','t5','t6','t7','m1','m2','m3','s1','s2','year_now','year_after']
+    .some(k=>String(td[k]||'').trim()!=='');
+}
+
 function buildTalentBlock(td){
-  if(!td)return`<div class="talent-block"><div class="talent-title">天賦設計</div><div style="text-align:center;color:#bbb;font-size:12px;padding:20px;">尚未上傳 MMT 表格截圖</div></div>`;
+  // 沒有任何天賦資料就整塊不印，避免版面留一大片空白
+  if(!hasTalent(td))return'';
 
   const wind=td.wind||'—',fire=td.fire||'—',water=td.water||'—',earth=td.earth||'—';
   const cards=['t1','t2','t3','t4','t5','t6','t7'].map(k=>td[k]||'');
@@ -526,9 +576,11 @@ function onSelectApplicant(){
   renderResume();
 }
 
-function renderResume(){
+function renderResume(noScroll){
   const idx=parseInt(document.getElementById('sel').value||'0');
   const r=recs[idx];if(!r)return;
+  const lineKey=hdrs.find(h=>h.startsWith('LINE ID'));
+  const lineId=lineKey?v(r,lineKey):'';
   const name=v(r,'姓名');
   const init=name?name[0]:'?';
   const td=talentMap[name]||null;
@@ -554,7 +606,8 @@ function renderResume(){
             ${fr('居住地址',v(r,'居住地址'))}
             ${fr('住家電話',v(r,'住家電話'))}
             ${fr('行動電話',v(r,'行動電話（手機）'))}
-            ${fr('E-mail',v(r,'E-mail')||v(r,'Email'))}
+            ${fr('E-mail',v(r,'E-mail')||v(r,'Email')||v(r,'電子郵件地址'))}
+            ${fr('LINE ID',lineId)}
             ${fr('緊急聯絡人',v(r,'緊急聯絡人'))}
             ${fr('緊急聯絡電話',v(r,'緊急聯絡人電話'))}
           </div>
@@ -581,7 +634,7 @@ function renderResume(){
 
   const wrap=document.getElementById('a4wrap');
   wrap.style.display='block';
-  wrap.scrollIntoView({behavior:'smooth',block:'start'});
+  if(!noScroll)wrap.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 /* ── PNG / PDF ── */
@@ -600,6 +653,36 @@ async function savePNG(){
     st.textContent='✓ PNG 已下載';setTimeout(()=>st.textContent='',3000);
   }catch(e){st.textContent='⚠ PNG 失敗：'+e.message;}
 }
+/* ── 一次匯出所有應徵者的 PNG ── */
+async function saveAllPNG(){
+  if(!recs.length){alert('請先貼上資料');return;}
+  const st=document.getElementById('export-status');
+  const sel=document.getElementById('sel');
+  const origIdx=sel.value;
+  const el=document.getElementById('a4');
+  let ok=0;
+  for(let i=0;i<recs.length;i++){
+    sel.value=String(i);
+    renderResume(true);
+    await new Promise(res=>setTimeout(res,120)); // 等版面 reflow
+    const name=(recs[i]['姓名']||`第${i+1}筆`).trim();
+    st.textContent=`⏳ 產生中 ${i+1}/${recs.length}：${name}`;
+    try{
+      const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+      const link=document.createElement('a');
+      link.download=`${name}_A4.png`;
+      link.href=canvas.toDataURL('image/png');
+      document.body.appendChild(link);link.click();link.remove();
+      ok++;
+      await new Promise(res=>setTimeout(res,350)); // 避免瀏覽器擋連續下載
+    }catch(e){st.textContent=`⚠ ${name} 失敗：${e.message}`;}
+  }
+  sel.value=origIdx;
+  renderTalentEditor();
+  renderResume(true);
+  st.textContent=`✓ 已匯出 ${ok}/${recs.length} 張 PNG`;
+}
+
 async function savePDF(){
   const el=document.getElementById('a4');
   if(!el||!el.innerHTML){alert('請先產生履歷預覽');return;}
@@ -623,6 +706,7 @@ function clearAll(){
   document.getElementById('status').textContent='';
   document.getElementById('selrow').style.display='none';
   document.getElementById('step2-card').style.display='none';
+  document.getElementById('export-card').style.display='none';
   document.getElementById('talent-edit-card').style.display='none';
   document.getElementById('a4wrap').style.display='none';
   document.getElementById('a4').innerHTML='';
