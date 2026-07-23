@@ -32,32 +32,6 @@ textarea:focus{outline:none;border-color:var(--green);}
 #selrow{display:none;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap;padding:12px 16px;background:#eaf4ee;border-radius:var(--radius);border:1px solid #b8dbc8;}
 #selrow label{font-size:13px;font-weight:700;color:var(--green);}
 select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa;border-radius:var(--radius);background:#fff;color:#111;cursor:pointer;}
-.api-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
-.api-row input{flex:1;min-width:200px;padding:8px 12px;font-size:13px;font-family:inherit;border:1px solid #bbb;border-radius:var(--radius);background:#fafafa;color:#111;}
-.api-row input:focus{outline:none;border-color:var(--green);}
-.api-saved{font-size:12px;color:var(--green);font-weight:700;}
-.upload-area{border:2.5px dashed #bbb;border-radius:var(--radius);padding:24px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:#fafafa;margin-bottom:12px;}
-.upload-area:hover,.upload-area.dragover{border-color:var(--green);background:#eaf4ee;}
-.upload-area input[type=file]{display:none;}
-.upload-icon{font-size:28px;margin-bottom:6px;}
-.upload-text{font-size:13px;color:#666;line-height:1.6;}
-.upload-text strong{color:var(--green);}
-.img-preview{display:none;margin-bottom:10px;text-align:center;}
-.img-preview img{max-width:100%;max-height:240px;border-radius:var(--radius);border:1px solid #ccc;}
-.ai-status{font-size:12px;font-weight:700;min-height:20px;margin-bottom:6px;}
-.ai-status.loading{color:#e67e22;}
-.ai-status.ok{color:var(--green);}
-.ai-status.err{color:#c0392b;}
-
-/* 比對結果 */
-.match-list{margin-top:10px;display:none;}
-.match-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;margin-bottom:4px;font-size:12px;}
-.match-item.hit{background:#eaf4ee;color:#0f3d26;}
-.match-item.miss{background:#fef3cd;color:#856404;}
-.match-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.hit .match-dot{background:var(--green);}
-.miss .match-dot{background:#e6a817;}
-
 /* A4 Wrapper */
 #a4wrap{display:none;background:#888;padding:28px 0 48px;margin-top:20px;}
 #a4lbl{text-align:center;font-size:12px;color:#ddd;margin-bottom:12px;}
@@ -131,24 +105,13 @@ select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa
 
   <div class="card">
     <div class="ct">使用說明</div>
-    <div class="step"><div class="sn">1</div><div class="st"><strong>直接貼上</strong> Google 試算表資料（可含或不含標題列）→ 自動解析、自動預覽</div></div>
-    <div class="step"><div class="sn">2</div><div class="st">按「儲存 PNG」出單張，或「全部匯出 PNG」一次出所有應徵者</div></div>
-    <div class="step"><div class="sn">3</div><div class="st">MMT 天賦區<strong>由出生年月日自動算出</strong>，不用 API、不用上傳截圖（可在下方關掉或手動修正）</div></div>
+    <div class="step"><div class="sn">1</div><div class="st"><strong>把 Google 試算表的資料貼進下面的框</strong>（可含或不含標題列）</div></div>
+    <div class="step"><div class="sn">2</div><div class="st">履歷自動產生，MMT 天賦由出生年月日直接算出，不需任何設定</div></div>
+    <div class="step"><div class="sn">3</div><div class="st">按「儲存 PNG」出單張，或「全部匯出 PNG」一次出所有應徵者</div></div>
   </div>
 
   <div class="card">
-    <div class="ct">Claude API Key（圖片辨識用，僅存於本機）</div>
-    <div class="api-row">
-      <input type="password" id="api-key" placeholder="sk-ant-api03-…" autocomplete="off">
-      <button class="btn bp" onclick="saveKey()">儲存</button>
-      <button class="btn bdanger" onclick="clearKey()">清除</button>
-      <span class="api-saved" id="key-saved"></span>
-    </div>
-    <div style="font-size:11px;color:#999;">API Key 只存在你的瀏覽器 localStorage，不會傳送到任何第三方。</div>
-  </div>
-
-  <div class="card">
-    <div class="ct">步驟一：貼上試算表資料</div>
+    <div class="ct">貼上試算表資料</div>
     <textarea id="ta" oninput="autoParse()" placeholder="直接貼上就好（貼完自動解析、自動預覽）&#10;可含標題列，也可以只貼資料列&#10;&#10;時間戳記	Email	姓名	身份證字號	出生年月日…"></textarea>
     <div id="status"></div>
     <div class="br">
@@ -159,15 +122,6 @@ select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa
       <label>選擇應徵者：</label>
       <select id="sel" onchange="onSelectApplicant()"></select>
     </div>
-  </div>
-
-  <div class="card" id="talent-auto-card" style="display:none;">
-    <div class="ct">MMT 天賦（由出生年月日自動計算）</div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-      <input type="checkbox" id="auto-talent" checked onchange="onToggleAutoTalent()" style="width:16px;height:16px;cursor:pointer;">
-      <span>用出生年月日自動算出天賦牌組、導師牌、陰影牌、年度策略與四大能量</span>
-    </label>
-    <div style="font-size:12px;color:#999;margin-top:8px;">算法與 MMT 系統一致（同 legacy 排盤引擎），不需要 API Key、也不必上傳截圖。若想改用 MMT 系統截圖辨識，下方仍可上傳；辨識到的人以截圖為準，其餘維持生日自動計算。</div>
   </div>
 
   <div class="card" id="export-card" style="display:none;">
@@ -182,26 +136,9 @@ select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa
     <div id="export-status"></div>
   </div>
 
-  <div class="card" id="step2-card" style="display:none;">
-    <div class="ct">步驟二：上傳 MMT 系統表格截圖（AI 自動辨識 1~6 人）</div>
-    <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
-      <input type="file" id="file-input" accept="image/*" onchange="handleFile(event)">
-      <div class="upload-icon">📊</div>
-      <div class="upload-text"><strong>點擊選擇 MMT 表格截圖</strong>，或直接拖曳圖片到這裡<br>支援 PNG、JPG、WebP｜可包含多人資料</div>
-    </div>
-    <div class="img-preview" id="img-preview">
-      <img id="preview-img" src="" alt="預覽">
-      <div style="margin-top:8px;">
-        <button class="btn bdanger" onclick="resetImage()" style="font-size:12px;padding:6px 14px;">✕ 重新上傳截圖</button>
-      </div>
-    </div>
-    <div class="ai-status" id="ai-status"></div>
-    <div class="match-list" id="match-list"></div>
-  </div>
-
   <div class="card" id="talent-edit-card" style="display:none;">
-    <div class="ct">MMT 天賦資料（可手動修正）</div>
-    <div style="font-size:12px;color:#999;margin-bottom:12px;">AI 辨識偶爾會把欄位對錯（例如把<strong>陰影牌</strong>當成<strong>年度策略</strong>）。若預覽有誤，直接在下方改，履歷會即時更新；留空的格子印出時顯示「—」。也可完全手動輸入（不必上傳截圖）。</div>
+    <div class="ct">MMT 天賦資料（已依生日自動算好，需要才改）</div>
+    <div style="font-size:12px;color:#999;margin-bottom:12px;">下面的數字是<strong>由出生年月日自動算出</strong>的天賦牌組、導師牌、陰影牌、年度策略與四大能量，正常情況不用動。若某人生日欄位空白或格式怪，可在這裡手動補；留空的格子印出時顯示「—」。</div>
     <div id="talent-editor"></div>
   </div>
 
@@ -226,7 +163,7 @@ function cardName(n){
   return CARD_MAP[k]?`${k} ${CARD_MAP[k]}`:k;
 }
 
-let recs=[], hdrs=[], talentMap={}, currentImgB64='', currentImgType='';
+let recs=[], hdrs=[], talentMap={};
 
 /* ═══════════════════════════════════════════════════════
    MMT 天賦計算引擎（移植自 jiachun-mmt/public/legacy.html）
@@ -344,79 +281,18 @@ function talentFromBirth(birthStr){
 
 // 幫所有「尚無天賦資料」的應徵者用生日自動補算
 function applyAutoTalent(){
-  const on=document.getElementById('auto-talent');
-  if(on&&!on.checked)return;
   const bkey=hdrs.find(h=>h.startsWith('出生年月日'))||'出生年月日（西元，例：1990/05/20）';
   recs.forEach(r=>{
     const name=(r['姓名']||'').trim();
     if(!name)return;
     const existing=talentMap[name];
-    if(existing&&!existing.__auto&&hasTalent(existing))return; // 已有 AI／手動資料就不覆蓋
+    if(existing&&!existing.__auto&&hasTalent(existing))return; // 手動改過的不覆蓋
     const td=talentFromBirth(r[bkey]);
     if(td){td.name=name;talentMap[name]=td;}
   });
 }
 
-function onToggleAutoTalent(){
-  const on=document.getElementById('auto-talent').checked;
-  if(on){applyAutoTalent();}
-  else{Object.keys(talentMap).forEach(k=>{if(talentMap[k]&&talentMap[k].__auto)delete talentMap[k];});}
-  renderTalentEditor();
-  renderResume(true);
-}
 
-/* ── API Key ── */
-window.addEventListener('DOMContentLoaded',()=>{
-  const k=localStorage.getItem('claude_api_key');
-  if(k){document.getElementById('api-key').value=k;document.getElementById('key-saved').textContent='✓ 已儲存';}
-});
-function saveKey(){
-  const k=document.getElementById('api-key').value.replace(/\s/g,'').trim();
-  if(!k)return;
-  localStorage.setItem('claude_api_key',k);
-  document.getElementById('api-key').value=k;
-  document.getElementById('key-saved').textContent='✓ 已儲存';
-}
-function clearKey(){localStorage.removeItem('claude_api_key');document.getElementById('api-key').value='';document.getElementById('key-saved').textContent='';}
-function getKey(){const k=localStorage.getItem('claude_api_key')||document.getElementById('api-key').value;return k.replace(/\s/g,'').trim();}
-
-function resetImage(){
-  document.getElementById('img-preview').style.display='none';
-  document.getElementById('preview-img').src='';
-  document.getElementById('ai-status').textContent='';
-  document.getElementById('ai-status').className='ai-status';
-  document.getElementById('match-list').style.display='none';
-  document.getElementById('match-list').innerHTML='';
-  document.getElementById('file-input').value='';
-  document.getElementById('upload-area').style.display='block';
-  currentImgB64='';currentImgType='';
-  talentMap={};
-  renderTalentEditor();
-  renderResume();
-}
-
-/* ── 姓名相似度（字符重疊比例）── */
-function nameSimilarity(a,b){
-  if(a===b)return 1;
-  if(!a||!b)return 0;
-  let match=0;
-  const shorter=a.length<=b.length?a:b;
-  const longer=a.length<=b.length?b:a;
-  for(const ch of shorter){if(longer.includes(ch))match++;}
-  return match/longer.length;
-}
-
-/* ── 找最佳姓名比對 ── */
-function findBestMatch(name, talentArr){
-  let best=null, bestScore=0;
-  for(const td of talentArr){
-    const score=nameSimilarity(name, td.name||'');
-    if(score>bestScore){bestScore=score;best=td;}
-  }
-  // 至少2個字元重疊且相似度>0.5才接受
-  if(bestScore>=0.5 && best) return {td:best, score:bestScore};
-  return null;
-}
 /* ── 沒有標題列時使用的預設欄位順序（Google 表單原始欄位）── */
 const DEFAULT_HDRS=['時間戳記','電子郵件地址','姓名','身份證字號','出生年月日（西元，例：1990/05/20）','居住地址','住家電話','行動電話（手機）','緊急聯絡人','緊急聯絡人電話','E-mail','畢業學校','就讀科系','【經歷一】服務機關名稱','職位名稱','待遇','任職期間（例：2020/03 至 2022/06）','離職原因','【經歷二】服務機關名稱','職位名稱2','任職期間2','離職原因2','是否有統一超商經歷：','若是，請填直營或加盟店及門市名稱','期望工作地點（可複選）','交通工具','期望上班班別（可複選）','其他特殊條件或備註','得知本次招募的管道（可複選）','若朋友介紹，請填介紹人姓名','若人力銀行，請填平台名稱','個資聲明','LINE ID（方便通知面試時間，請提供您的 LINE ID；若無 LINE 請填「無」）','我同意門市以電話或 LINE 與我聯繫面試相關事宜'];
 
@@ -461,154 +337,10 @@ function parseData(silent){
   sel.innerHTML=recs.map((r,i)=>`<option value="${i}">${r['姓名']||'第'+(i+1)+'筆'}</option>`).join('');
   if(prev&&recs[parseInt(prev)])sel.value=prev;
   document.getElementById('selrow').style.display='flex';
-  document.getElementById('step2-card').style.display='block';
-  document.getElementById('talent-auto-card').style.display='block';
   document.getElementById('export-card').style.display='block';
   applyAutoTalent();
   renderTalentEditor();
   renderResume(silent);
-}
-
-/* ── 圖片上傳 ── */
-function dragOver(e){e.preventDefault();document.getElementById('upload-area').classList.add('dragover');}
-function dragLeave(){document.getElementById('upload-area').classList.remove('dragover');}
-function dropFile(e){e.preventDefault();document.getElementById('upload-area').classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)processImageFile(f);}
-function handleFile(e){const f=e.target.files[0];if(f)processImageFile(f);}
-function processImageFile(file){
-  if(!file.type.startsWith('image/')){alert('請上傳圖片檔案');return;}
-  const reader=new FileReader();
-  reader.onload=function(e){
-    const dataUrl=e.target.result;
-    currentImgB64=dataUrl.split(',')[1];currentImgType=file.type;
-    document.getElementById('preview-img').src=dataUrl;
-    document.getElementById('img-preview').style.display='block';
-    analyzeMMT();
-  };
-  reader.readAsDataURL(file);
-}
-
-/* ── AI 辨識 MMT 表格 ── */
-async function analyzeMMT(){
-  const key=getKey();
-  if(!key){
-    setAIStatus('err','⚠ 請先填入 Claude API Key');
-    return;
-  }
-  setAIStatus('loading','🔍 AI 辨識表格中，請稍候…');
-
-  const prompt=`這是 MMT 天賦系統的表格截圖。畫面可能已經篩選，只顯示部分人員，也可能有欄位被隱藏。請依畫面上「實際可見的表頭區塊」定位資料，不要假設欄位序號，也不要單純依數字出現順序推測。
-
-實際表格由左到右的區塊為：
-姓名 | 位階 | 四大能量（風、火、水、土） | 天賦牌（最多7張） | 導師牌（最多3張） | 陰影牌（最多2張） | 年度策略（目前、生日後）
-
-重要：
-1. 年度策略是表格最右側「年度策略」區塊下的兩格，左格是「目前」，右格是「生日後」。
-2. 不可將天賦牌、導師牌或陰影牌的數字當成年度策略。
-3. 每位人都必須水平對齊同一列讀取，不可混入上一列或下一列的數字。
-4. 天賦牌依畫面從左至右填入 T1〜T7；導師牌填入 M1〜M3；陰影牌填入 S1〜S2。
-5. 若篩選後某個表頭或資料格沒有出現在截圖中，對應欄位必須留空；禁止根據其他牌號猜測或補值。
-
-請辨識表格中所有人的資料（可能1到6人），以 JSON 陣列回傳，不要有任何其他文字或 markdown：
-[
-  {
-    "name": "姓名",
-    "wind": "風能量數字（不含%）",
-    "fire": "火能量數字",
-    "water": "水能量數字",
-    "earth": "土能量數字",
-    "year_now": "最右側年度策略區塊中「目前」格的牌號數字",
-    "year_after": "最右側年度策略區塊中「生日後」格的牌號數字",
-    "t1":"","t2":"","t3":"","t4":"","t5":"","t6":"","t7":"",
-    "m1":"","m2":"","m3":"",
-    "s1":"","s2":""
-  }
-]
-欄位只填數字（例如：8、13、17），如果該欄位是空的或「—」填入空字串""。回傳前再次檢查 year_now 與 year_after 皆來自最右側年度策略區塊。`;
-
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':key,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({
-        model:'claude-sonnet-4-5',
-        max_tokens:2000,
-        messages:[{
-          role:'user',
-          content:[
-            {type:'image',source:{type:'base64',media_type:currentImgType,data:currentImgB64}},
-            {type:'text',text:prompt}
-          ]
-        }]
-      })
-    });
-    const data=await res.json();
-    if(data.error)throw new Error(data.error.message);
-    const text=data.content[0].text.trim();
-    const start=text.indexOf('[');
-    const end=text.lastIndexOf(']');
-    if(start===-1||end===-1)throw new Error('AI 未回傳陣列格式，請重試');
-    const clean=text.slice(start,end+1);
-    let arr;
-    try{arr=JSON.parse(clean);}
-    catch(pe){throw new Error('JSON 解析失敗，請重試');}
-    if(!Array.isArray(arr)||arr.length===0)throw new Error('辨識結果為空，請重試');
-    processTalentData(arr);
-  }catch(err){
-    setAIStatus('err','⚠ 辨識失敗：'+err.message);
-  }
-}
-
-function setAIStatus(cls,msg){
-  const el=document.getElementById('ai-status');
-  el.className='ai-status '+cls;el.textContent=msg;
-}
-
-function processTalentData(arr){
-  try{
-    talentMap={};
-    if(!Array.isArray(arr))throw new Error('回傳格式不是陣列');
-
-    const matchEl=document.getElementById('match-list');
-    matchEl.style.display='block';
-    matchEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#333;margin-bottom:6px;">姓名比對結果：</div>';
-
-    let hitCount=0;
-    recs.forEach(r=>{
-      const name=(r['姓名']||'').trim();
-      // 先嘗試完全比對
-      const exactMatch=arr.find(p=>String(p.name||'').trim()===name);
-      if(exactMatch){
-        talentMap[name]=exactMatch;
-        hitCount++;
-        const annual=`目前 ${exactMatch.year_now||'—'}／生日後 ${exactMatch.year_after||'—'}`;
-        matchEl.innerHTML+=`<div class="match-item hit"><div class="match-dot"></div><span>${name}</span><span style="margin-left:auto;font-size:11px;">✓ 完全比對｜年度策略：${annual}</span></div>`;
-        return;
-      }
-      // 模糊比對
-      const fuzzy=findBestMatch(name, arr);
-      if(fuzzy){
-        talentMap[name]=fuzzy.td;
-        hitCount++;
-        const pct=Math.round(fuzzy.score*100);
-        const annual=`目前 ${fuzzy.td.year_now||'—'}／生日後 ${fuzzy.td.year_after||'—'}`;
-        matchEl.innerHTML+=`<div class="match-item hit"><div class="match-dot"></div><span>${name}</span><span style="margin-left:auto;font-size:11px;">✓ 模糊比對（${fuzzy.td.name}，${pct}%）｜年度策略：${annual}</span></div>`;
-      } else {
-        matchEl.innerHTML+=`<div class="match-item miss"><div class="match-dot"></div><span>${name}</span><span style="margin-left:auto;font-size:11px;">⚠ 未找到對應</span></div>`;
-      }
-    });
-
-    setAIStatus('ok',`✓ 辨識完成！共 ${arr.length} 人資料，成功對應 ${hitCount} / ${recs.length} 位應徵者。未對應到的會改用生日自動計算。如有欄位跑掉，可在下方「MMT 天賦資料」直接修正。`);
-    applyAutoTalent(); // 沒被截圖對應到的人，回頭用生日自動補
-    renderTalentEditor();
-    renderResume();
-  }catch(e){
-    setAIStatus('err','⚠ 資料處理失敗：'+e.message);
-  }
 }
 
 /* ── 輔助函式 ── */
@@ -855,19 +587,11 @@ function clearAll(){
   document.getElementById('ta').value='';
   document.getElementById('status').textContent='';
   document.getElementById('selrow').style.display='none';
-  document.getElementById('step2-card').style.display='none';
-  document.getElementById('talent-auto-card').style.display='none';
   document.getElementById('export-card').style.display='none';
   document.getElementById('talent-edit-card').style.display='none';
   document.getElementById('a4wrap').style.display='none';
   document.getElementById('a4').innerHTML='';
-  document.getElementById('img-preview').style.display='none';
-  document.getElementById('ai-status').textContent='';
-  document.getElementById('match-list').style.display='none';
-  document.getElementById('match-list').innerHTML='';
-  document.getElementById('file-input').value='';
-  document.getElementById('upload-area').style.display='block';
-  recs=[];hdrs=[];talentMap={};currentImgB64='';currentImgType='';
+  recs=[];hdrs=[];talentMap={};
 }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
