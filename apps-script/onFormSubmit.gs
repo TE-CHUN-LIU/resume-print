@@ -10,7 +10,8 @@
  */
 
 // ── 設定（Token 存在「指令碼屬性」，不寫進程式碼）──
-var API_URL = 'https://jiachun-mmt.com/api/resume-png';
+// 用 www（apex 會 308 轉址，UrlFetchApp 對 POST 轉址處理不可靠）
+var API_URL = 'https://www.jiachun-mmt.com/api/resume-png';
 var MAIL_TO = 'ty0220722000@gmail.com';
 
 function getToken_() {
