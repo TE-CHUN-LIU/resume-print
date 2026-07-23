@@ -64,7 +64,8 @@ select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa
 .talent-title::before,.talent-title::after{content:'';flex:1;height:1.5px;background:#000;}
 .energy-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
 .energy-item{border:2px solid #000;border-radius:4px;padding:7px 8px;text-align:center;}
-.energy-icon{font-size:18px;line-height:1;}
+.energy-icon{height:19px;display:flex;align-items:center;justify-content:center;}
+.energy-icon svg{width:19px;height:19px;}
 .energy-label{font-size:11px;font-weight:700;margin-top:2px;}
 .energy-pct{font-size:16px;font-weight:900;margin-top:1px;}
 .cards-row{display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-wrap:wrap;}
@@ -393,10 +394,10 @@ function buildTalentBlock(td){
   return`<div class="talent-block">
     <div class="talent-title">天賦設計（MMT 天賦系統）</div>
     <div class="energy-row">
-      <div class="energy-item"><div class="energy-icon">🌬</div><div class="energy-label">風能量</div><div class="energy-pct">${wind}%</div></div>
-      <div class="energy-item"><div class="energy-icon">🔥</div><div class="energy-label">火能量</div><div class="energy-pct">${fire}%</div></div>
-      <div class="energy-item"><div class="energy-icon">💧</div><div class="energy-label">水能量</div><div class="energy-pct">${water}%</div></div>
-      <div class="energy-item"><div class="energy-icon">🪨</div><div class="energy-label">土能量</div><div class="energy-pct">${earth}%</div></div>
+      <div class="energy-item"><div class="energy-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 18h8"/></svg></div><div class="energy-label">風能量</div><div class="energy-pct">${wind}%</div></div>
+      <div class="energy-item"><div class="energy-icon"><svg viewBox="0 0 24 24" fill="#000"><path d="M12 2c.6 3.5-1.8 4.9-3.2 6.6C7.2 10.4 6 12 6 14.5 6 18.6 8.9 22 12 22s6-3.4 6-7.5c0-3.4-2.2-5.6-3.9-7.6C12.8 5.4 12.2 3.9 12 2zm0 17c-1.6 0-2.8-1.5-2.8-3.2 0-1.6 1-2.6 1.8-3.6.6-.7 1-1.4 1.1-2.2.9 1 2.7 2.6 2.7 5.1C14.8 17.2 13.6 19 12 19z"/></svg></div><div class="energy-label">火能量</div><div class="energy-pct">${fire}%</div></div>
+      <div class="energy-item"><div class="energy-icon"><svg viewBox="0 0 24 24" fill="#000"><path d="M12 2.5S5 10.4 5 14.8C5 18.8 8.1 22 12 22s7-3.2 7-7.2C19 10.4 12 2.5 12 2.5zm0 17.2c-2.7 0-5-2.3-5-4.9 0-2.4 3.1-6.7 5-9 1.9 2.3 5 6.6 5 9 0 2.6-2.3 4.9-5 4.9z"/></svg></div><div class="energy-label">水能量</div><div class="energy-pct">${water}%</div></div>
+      <div class="energy-item"><div class="energy-icon"><svg viewBox="0 0 24 24" fill="#000"><path d="M6.5 9.5 3 15.5c-.5.9.1 2 1.2 2h15.6c1.1 0 1.7-1.1 1.2-2l-4.6-8c-.5-.9-1.9-.9-2.4 0l-2.3 4-1.8-3.5c-.5-1-1.9-1-2.4 0z"/><circle cx="17" cy="6" r="2.2"/></svg></div><div class="energy-label">土能量</div><div class="energy-pct">${earth}%</div></div>
     </div>
     <div class="sh" style="margin-bottom:8px;">天賦牌組</div>
     <div class="cards-row">${cards.map(c=>chipHtml(c,'card-chip')).join('')}</div>
