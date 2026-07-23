@@ -132,3 +132,14 @@ function notifyError_(err, e) {
       '也可以直接開工具貼上該列：https://te-chun-liu.github.io/resume-print/\n',
   });
 }
+
+/** 除錯用：把標題列與最後一列的關鍵欄位印到執行記錄 */
+function debugDump() {
+  var headers = headerValues_();
+  var values = lastRowValues_();
+  Logger.log('欄位數 headers=' + headers.length + ' values=' + values.length);
+  Logger.log('姓名欄=[' + byHeader_(headers, values, '姓名') + ']');
+  Logger.log('生日欄=[' + byHeader_(headers, values, '出生年月日') + ']');
+  Logger.log('標題前6=' + JSON.stringify(headers.slice(0, 6)));
+  Logger.log('資料前6=' + JSON.stringify(values.slice(0, 6).map(cellToText_)));
+}
