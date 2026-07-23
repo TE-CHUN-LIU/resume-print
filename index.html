@@ -133,7 +133,7 @@ select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa
     <div class="ct">使用說明</div>
     <div class="step"><div class="sn">1</div><div class="st"><strong>直接貼上</strong> Google 試算表資料（可含或不含標題列）→ 自動解析、自動預覽</div></div>
     <div class="step"><div class="sn">2</div><div class="st">按「儲存 PNG」出單張，或「全部匯出 PNG」一次出所有應徵者</div></div>
-    <div class="step"><div class="sn">3</div><div class="st">（選用）上傳 MMT 表格截圖 → AI 辨識天賦資料；不上傳就不會印天賦區</div></div>
+    <div class="step"><div class="sn">3</div><div class="st">MMT 天賦區<strong>由出生年月日自動算出</strong>，不用 API、不用上傳截圖（可在下方關掉或手動修正）</div></div>
   </div>
 
   <div class="card">
@@ -159,6 +159,15 @@ select{padding:6px 12px;font-size:13px;font-family:inherit;border:1px solid #aaa
       <label>選擇應徵者：</label>
       <select id="sel" onchange="onSelectApplicant()"></select>
     </div>
+  </div>
+
+  <div class="card" id="talent-auto-card" style="display:none;">
+    <div class="ct">MMT 天賦（由出生年月日自動計算）</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+      <input type="checkbox" id="auto-talent" checked onchange="onToggleAutoTalent()" style="width:16px;height:16px;cursor:pointer;">
+      <span>用出生年月日自動算出天賦牌組、導師牌、陰影牌、年度策略與四大能量</span>
+    </label>
+    <div style="font-size:12px;color:#999;margin-top:8px;">算法與 MMT 系統一致（同 legacy 排盤引擎），不需要 API Key、也不必上傳截圖。若想改用 MMT 系統截圖辨識，下方仍可上傳；辨識到的人以截圖為準，其餘維持生日自動計算。</div>
   </div>
 
   <div class="card" id="export-card" style="display:none;">
@@ -218,6 +227,143 @@ function cardName(n){
 }
 
 let recs=[], hdrs=[], talentMap={}, currentImgB64='', currentImgType='';
+
+/* ═══════════════════════════════════════════════════════
+   MMT 天賦計算引擎（移植自 jiachun-mmt/public/legacy.html）
+   由出生年月日直接算出：天賦牌、導師牌、陰影牌、年度策略、四大能量
+   ═══════════════════════════════════════════════════════ */
+const CN_ENERGY={0:'wind',1:'wind',2:'water',3:'water',4:'fire',5:'earth',6:'wind',
+  7:'water',8:'fire',9:'earth',10:'earth',11:'wind',12:'water',13:'water',14:'fire',
+  15:'earth',16:'fire',17:'wind',18:'water',19:'fire',20:'wind',21:'earth'};
+
+function dsum(n){return String(n).split('').reduce((a,c)=>a+parseInt(c),0);}
+function sub22(n){while(n>21)n-=22;return n===22?0:n;}
+
+// 導師牌：位數和→10-21 加入序列→繼續縮→最終個位數必加→去重保序
+function calcMentorCards(year,month,day){
+  const digits=String(year)+String(month)+String(day);
+  let mraw=digits.split('').reduce((a,c)=>a+parseInt(c),0);
+  const mentors=[];
+  while(mraw>9){
+    if(mraw<=21)mentors.push(mraw);
+    mraw=dsum(mraw);
+  }
+  mentors.push(mraw);
+  const seen=new Set(),unique=[];
+  mentors.forEach(m=>{if(!seen.has(m)){seen.add(m);unique.push(m);}});
+  return unique;
+}
+
+// 陰影牌：導師最終個位數所屬家族中，未出現在導師序列的牌
+const SHADOW_FAMILY=[[1,10,19],[2,11,20],[3,12,21],[4,13,0],[5,14],[6,15],[7,16],[8,17],[9,18]];
+function calcShadowCards(mentorList){
+  const final=mentorList[mentorList.length-1];
+  for(const fam of SHADOW_FAMILY){
+    if(fam.includes(final))return fam.filter(m=>!mentorList.includes(m));
+  }
+  return[];
+}
+
+// 年輪牌：生日在一年中的位置，取前中後 3 張
+function daysFromJan1(month,day){
+  const dims=[0,31,28,31,30,31,30,31,31,30,31,30,31];
+  let d=0;for(let i=0;i<month;i++)d+=dims[i];
+  return d+day;
+}
+function cycle3Cards(month,day){
+  const d=daysFromJan1(month,day);
+  let p=d%22;if(p===0)p=22;
+  const prev=p>1?p-1:22;
+  const next=p<22?p+1:1;
+  return[prev===22?0:prev,p===22?0:p,next===22?0:next];
+}
+
+// 天賦牌組：年輪 3 張 + 日牌 + 牌1 + 牌2（允許重複）
+function calcGifts(year,month,day){
+  const yd=dsum(year),md=dsum(month),dd=dsum(day);
+  let dayC=day;
+  if(day===22)dayC=0;
+  else if(day>22){let n=day;while(n>9)n=dsum(n);dayC=n;}
+  const p1=sub22(yd+md+dd);
+  const p2=sub22(yd+month+day);
+  const yrCards=cycle3Cards(month,day);
+  const allSlots=[...yrCards,dayC,p1,p2];
+  const cnt={};
+  allSlots.forEach(n=>{cnt[n]=(cnt[n]||0)+1;});
+  const allCards=[];
+  Object.keys(cnt).map(Number).sort((a,b)=>a-b).forEach(n=>{
+    for(let i=0;i<cnt[n];i++)allCards.push(n);
+  });
+  return allCards;
+}
+
+// 生日字串 → {y,m,d}；支援 2008/6/12、2008-06-12、2008.6.12
+function parseBirth(str){
+  const s=String(str||'').trim();
+  const m=s.match(/(\d{4})\s*[\/\-\.年]\s*(\d{1,2})\s*[\/\-\.月]\s*(\d{1,2})/);
+  if(!m)return null;
+  const y=+m[1],mo=+m[2],d=+m[3];
+  if(y<1900||y>2100||mo<1||mo>12||d<1||d>31)return null;
+  return{y,m:mo,d};
+}
+
+// 由生日算出整份天賦資料（欄位對齊履歷天賦區）
+function talentFromBirth(birthStr){
+  const b=parseBirth(birthStr);
+  if(!b)return null;
+  const {y,m,d}=b;
+  const gifts=calcGifts(y,m,d);
+  const mentors=[...calcMentorCards(y,m,d)].sort((a,b)=>a-b);
+  const shadows=calcShadowCards(calcMentorCards(y,m,d));
+
+  // 年度策略：以「上一次生日」所在年為基準
+  const today=new Date();
+  const curYear=today.getFullYear();
+  const thisYearBday=new Date(curYear,m-1,d);
+  const baseYear=today>=thisYearBday?curYear:curYear-1;
+  let ysCur=baseYear+m+d, ysNxt=(baseYear+1)+m+d;
+  while(ysCur>21)ysCur=dsum(ysCur);
+  if(ysCur===22)ysCur=0;
+  while(ysNxt>21)ysNxt=dsum(ysNxt);
+  if(ysNxt===22)ysNxt=0;
+
+  // 四大能量：天賦牌 + 導師牌 一起統計
+  const eCards=[...gifts,...mentors];
+  const cnt={wind:0,fire:0,water:0,earth:0};
+  eCards.forEach(n=>{const e=CN_ENERGY[n];if(e)cnt[e]++;});
+  const t=eCards.length||1;
+  const pct=k=>String(Math.round(cnt[k]/t*1000)/10);
+
+  const td={name:'',wind:pct('wind'),fire:pct('fire'),water:pct('water'),earth:pct('earth'),
+    year_now:String(ysCur),year_after:String(ysNxt),__auto:true};
+  for(let i=0;i<7;i++)td['t'+(i+1)]=gifts[i]!=null?String(gifts[i]):'';
+  for(let i=0;i<3;i++)td['m'+(i+1)]=mentors[i]!=null?String(mentors[i]):'';
+  for(let i=0;i<2;i++)td['s'+(i+1)]=shadows[i]!=null?String(shadows[i]):'';
+  return td;
+}
+
+// 幫所有「尚無天賦資料」的應徵者用生日自動補算
+function applyAutoTalent(){
+  const on=document.getElementById('auto-talent');
+  if(on&&!on.checked)return;
+  const bkey=hdrs.find(h=>h.startsWith('出生年月日'))||'出生年月日（西元，例：1990/05/20）';
+  recs.forEach(r=>{
+    const name=(r['姓名']||'').trim();
+    if(!name)return;
+    const existing=talentMap[name];
+    if(existing&&!existing.__auto&&hasTalent(existing))return; // 已有 AI／手動資料就不覆蓋
+    const td=talentFromBirth(r[bkey]);
+    if(td){td.name=name;talentMap[name]=td;}
+  });
+}
+
+function onToggleAutoTalent(){
+  const on=document.getElementById('auto-talent').checked;
+  if(on){applyAutoTalent();}
+  else{Object.keys(talentMap).forEach(k=>{if(talentMap[k]&&talentMap[k].__auto)delete talentMap[k];});}
+  renderTalentEditor();
+  renderResume(true);
+}
 
 /* ── API Key ── */
 window.addEventListener('DOMContentLoaded',()=>{
@@ -316,7 +462,9 @@ function parseData(silent){
   if(prev&&recs[parseInt(prev)])sel.value=prev;
   document.getElementById('selrow').style.display='flex';
   document.getElementById('step2-card').style.display='block';
+  document.getElementById('talent-auto-card').style.display='block';
   document.getElementById('export-card').style.display='block';
+  applyAutoTalent();
   renderTalentEditor();
   renderResume(silent);
 }
@@ -454,7 +602,8 @@ function processTalentData(arr){
       }
     });
 
-    setAIStatus('ok',`✓ 辨識完成！共 ${arr.length} 人資料，成功對應 ${hitCount} / ${recs.length} 位應徵者。如有欄位跑掉，可在下方「MMT 天賦資料」直接修正。`);
+    setAIStatus('ok',`✓ 辨識完成！共 ${arr.length} 人資料，成功對應 ${hitCount} / ${recs.length} 位應徵者。未對應到的會改用生日自動計算。如有欄位跑掉，可在下方「MMT 天賦資料」直接修正。`);
+    applyAutoTalent(); // 沒被截圖對應到的人，回頭用生日自動補
     renderTalentEditor();
     renderResume();
   }catch(e){
@@ -569,6 +718,7 @@ function onTalentInput(field,val){
   const name=v(r,'姓名');
   if(!talentMap[name])talentMap[name]={name};
   talentMap[name][field]=val.trim();
+  talentMap[name].__auto=false; // 手動改過就不再被自動計算覆蓋
   renderResume();
 }
 function onSelectApplicant(){
@@ -706,6 +856,7 @@ function clearAll(){
   document.getElementById('status').textContent='';
   document.getElementById('selrow').style.display='none';
   document.getElementById('step2-card').style.display='none';
+  document.getElementById('talent-auto-card').style.display='none';
   document.getElementById('export-card').style.display='none';
   document.getElementById('talent-edit-card').style.display='none';
   document.getElementById('a4wrap').style.display='none';
