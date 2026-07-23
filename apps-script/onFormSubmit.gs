@@ -51,15 +51,39 @@ function lastRowValues_() {
   return sh.getRange(sh.getLastRow(), 1, 1, sh.getLastColumn()).getValues()[0];
 }
 
+/** 試算表第 1 列＝標題列 */
+function headerValues_() {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+  return sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(cellToText_);
+}
+
+/** 依標題關鍵字取值（找不到就回空字串），避免寫死欄位索引 */
+function byHeader_(headers, values, keyword) {
+  for (var i = 0; i < headers.length; i++) {
+    if (headers[i] && headers[i].indexOf(keyword) === 0) return cellToText_(values[i]);
+  }
+  for (var j = 0; j < headers.length; j++) {
+    if (headers[j] && headers[j].indexOf(keyword) !== -1) return cellToText_(values[j]);
+  }
+  return '';
+}
+
 /** 一列資料 → 產 PNG → 寄信 */
 function sendResumeFor_(values) {
-  var row = values.map(cellToText_).join('\t');
-  var name = String(values[2] || '').trim() || '應徵者';   // 第 3 欄＝姓名
+  var headers = headerValues_();
+  // 標題列一起送，讓履歷工具用「實際欄位名」對應（等同你手動連標題貼上的結果）
+  var rows = [headers.join('\t'), values.map(cellToText_).join('\t')];
+
+  var name  = byHeader_(headers, values, '姓名') || '應徵者';
+  var birth = byHeader_(headers, values, '出生年月日');
+  var phone = byHeader_(headers, values, '行動電話');
+  var want  = byHeader_(headers, values, '期望工作地點');
+  var shift = byHeader_(headers, values, '期望上班班別');
 
   var res = UrlFetchApp.fetch(API_URL, {
     method: 'post',
     contentType: 'application/json',
-    payload: JSON.stringify({ token: getToken_(), rows: row }),
+    payload: JSON.stringify({ token: getToken_(), rows: rows }),
     muteHttpExceptions: true,
     followRedirects: true,
   });
@@ -70,10 +94,6 @@ function sendResumeFor_(values) {
   }
 
   var blob = res.getBlob().setName(name + '_應徵履歷.png');
-  var birth = cellToText_(values[4]);
-  var phone = cellToText_(values[7]);
-  var want  = cellToText_(values[24]);
-  var shift = cellToText_(values[26]);
 
   MailApp.sendEmail({
     to: MAIL_TO,
